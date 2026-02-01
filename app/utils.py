@@ -4,12 +4,11 @@ import time
 from typing import Any, Dict
 
 BASE_DIR = Path(__file__).resolve().parents[1]
-
 DATA_RAW = BASE_DIR/ "data" / "raw" / "anime_data23.csv"
-DATA_PROCESSED = ""
+DATA_PROCESSED = BASE_DIR/ "data" / "processed" / "documents.json"
 FAISS_DIR = BASE_DIR/ "embeddings" / "faiss_index"
 
-EMBED_MODEL_NAME = "" # For Generating embeddings
+EMBED_MODEL_NAME = "BAAI/bge-base-en-v1.5" # For Generating embeddings
 CHAT_MODEL_NAME = "" # For text generation
 # Retrieve top 50 similar docs from Faiss and return top 5 to send to llm
 TOP_K_RETRIEVE = "50"
