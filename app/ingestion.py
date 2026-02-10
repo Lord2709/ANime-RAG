@@ -1,6 +1,6 @@
 import json
 from pathlib import Path
-from typing import List, Dict
+from typing import Any, List, Dict
 import numpy as np
 import pandas as pd
 import faiss
@@ -13,12 +13,45 @@ FAISS_DIR = BASE_DIR/ "embeddings" / "faiss_index"
 
 EMBED_MODEL_NAME = "BAAI/bge-base-en-v1.5" # For Generating embeddings
 
+# Chunking configuration (fixed)
+CHUNK_SIZE_CHARS = 1000
+CHUNK_OVERLAP_CHARS = 150
+
 def clean_text(text: str) -> str:
     text = str(text)
     text = text.replace("\n\n", " ")
     text = text.replace("\r", " ")
     text = " ".join(text.split())
     return text
+
+
+def chunk_text(text: str, chunk_size: int, chunk_overlap: int) -> List[Dict[str, Any]]:
+    if chunk_size <= 0:
+        raise ValueError("chunk_size must be > 0")
+    if chunk_overlap < 0 or chunk_overlap >= chunk_size:
+        raise ValueError("chunk_overlap must be >= 0 and < chunk_size")
+
+    text = clean_text(text)
+    n = len(text)
+    if n == 0:
+        return [{"text": "", "start": 0, "end": 0}]
+
+    chunks: List[Dict[str, int | str]] = []
+    start = 0
+    while start < n:
+        end = min(start + chunk_size, n)
+        if end < n:
+            space = text.rfind(" ", start, end)
+            if space != -1 and space > start + 20:
+                end = space
+        chunk = text[start:end].strip()
+        if chunk:
+            chunks.append({"text": chunk, "start": start, "end": end})
+        if end >= n:
+            break
+        start = max(0, end - chunk_overlap)
+
+    return chunks
 
 def load_and_clean_csv(path: Path) -> pd.DataFrame:
     if not path.exists():
@@ -90,31 +123,44 @@ def build_documents(df: pd.DataFrame) -> List[Dict]:
     
     for _, row in df.iterrows():
         title = row["English name"] if str(row["English name"]).strip() != "" else row["Name"]
-        doc_text = f"""
-        Title: {title}
-        Genres: {row['Genres']}
-        Type: {row['Type']}
-        Episodes: {row['Episodes']}
-        Studio: {row['Studios']}
-        Synopsis: {row['Synopsis']}
-        """.strip()
-        
-        doc = {
-            "content": doc_text,
-            "metadata": {
-                "title": title,
-                "score": float(row["Score"]) if not pd.isna(row["Score"]) else None,
-                "genres": row["Genres"],
-                "type": row["Type"],
-                "episodes": row["Episodes"],
-                "duration": row["Duration"],
-                "aired": row["Aired"],
-                "producer": row["Producers"],
-                "studio": row["Studios"],
-                "rank": row["Rank"],
-            },
+        header = "\n".join(
+            [
+                f"Title: {title}",
+                f"Genres: {row['Genres']}",
+                f"Type: {row['Type']}",
+                f"Episodes: {row['Episodes']}",
+                f"Studio: {row['Studios']}",
+            ]
+        ).strip()
+
+        synopsis = row["Synopsis"]
+        chunks = chunk_text(synopsis, CHUNK_SIZE_CHARS, CHUNK_OVERLAP_CHARS)
+
+        base_metadata = {
+            "title": title,
+            "score": float(row["Score"]) if not pd.isna(row["Score"]) else None,
+            "genres": row["Genres"],
+            "type": row["Type"],
+            "episodes": row["Episodes"],
+            "duration": row["Duration"],
+            "aired": row["Aired"],
+            "producer": row["Producers"],
+            "studio": row["Studios"],
+            "rank": row["Rank"],
         }
-        documents.append(doc)
+
+        for idx, chunk in enumerate(chunks):
+            doc_text = f"{header}\nSynopsis: {chunk['text']}".strip()
+            doc = {
+                "content": doc_text,
+                "metadata": {
+                    **base_metadata,
+                    "chunk_id": idx,
+                    "chunk_start": chunk["start"],
+                    "chunk_end": chunk["end"],
+                },
+            }
+            documents.append(doc)
 
     return documents
 

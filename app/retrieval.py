@@ -1,5 +1,5 @@
 from pathlib import Path
-from typing import List, Dict
+from typing import Any, Dict, List, Optional
 
 import faiss
 import json
@@ -18,6 +18,71 @@ EMBED_MODEL_NAME = "BAAI/bge-base-en-v1.5"
 _model = None
 _index = None
 _docs = None
+
+
+def _normalize_text(value: Any) -> str:
+    if value is None:
+        return ""
+    return " ".join(str(value).split())
+
+
+def _to_float(value: Any) -> Optional[float]:
+    try:
+        return float(value)
+    except (TypeError, ValueError):
+        return None
+
+
+def _to_int(value: Any) -> Optional[int]:
+    try:
+        return int(value)
+    except (TypeError, ValueError):
+        return None
+
+
+def _matches_filters(doc: Dict[str, Any], filters: Optional[Dict[str, Any]]) -> bool:
+    if not filters:
+        return True
+
+    genres = _normalize_text(doc.get("genres", "")).lower()
+    if "genres" in filters:
+        wanted = filters["genres"]
+        if isinstance(wanted, str):
+            wanted = [wanted]
+        for g in wanted:
+            g_norm = _normalize_text(g).lower()
+            if g_norm and g_norm not in genres:
+                return False
+
+    if "studio" in filters:
+        studio = _normalize_text(doc.get("studio", "")).lower()
+        wanted = _normalize_text(filters["studio"]).lower()
+        if wanted and wanted not in studio:
+            return False
+
+    if "type" in filters:
+        anime_type = _normalize_text(doc.get("type", "")).lower()
+        wanted = _normalize_text(filters["type"]).lower()
+        if wanted and wanted != anime_type:
+            return False
+
+    score = _to_float(doc.get("score"))
+    min_score = _to_float(filters.get("min_score")) if "min_score" in filters else None
+    max_score = _to_float(filters.get("max_score")) if "max_score" in filters else None
+    if min_score is not None and (score is None or score < min_score):
+        return False
+    if max_score is not None and (score is None or score > max_score):
+        return False
+
+    episodes = _to_int(doc.get("episodes"))
+    min_eps = _to_int(filters.get("min_episodes")) if "min_episodes" in filters else None
+    max_eps = _to_int(filters.get("max_episodes")) if "max_episodes" in filters else None
+    if min_eps is not None and (episodes is None or episodes < min_eps):
+        return False
+    if max_eps is not None and (episodes is None or episodes > max_eps):
+        return False
+
+    return True
 
 
 def _load_model():
@@ -60,12 +125,18 @@ def embed_query(text: str) -> np.ndarray:
     return q
 
 
-def search(query: str, k: int = 5) -> List[Dict]:
+def search(
+    query: str,
+    k: int = 5,
+    filters: Optional[Dict[str, Any]] = None,
+    candidate_factor: int = 4,
+) -> List[Dict]:
     docs = _load_docs()
     index = _load_index()
     q_emb = embed_query(query)
 
-    scores, idxs = index.search(q_emb, k)
+    candidate_k = min(len(docs), max(k, k * candidate_factor))
+    scores, idxs = index.search(q_emb, candidate_k)
     scores = scores[0]
     idxs = idxs[0]
 
@@ -80,7 +151,11 @@ def search(query: str, k: int = 5) -> List[Dict]:
         }
         if isinstance(doc, dict) and "metadata" in doc and isinstance(doc["metadata"], dict):
             flat.update(doc["metadata"])
+        if not _matches_filters(flat, filters):
+            continue
         results.append(flat)
+        if len(results) >= k:
+            break
 
     return results
 

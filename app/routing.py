@@ -1,4 +1,4 @@
-from typing import Any, Dict, List, Tuple
+from typing import Any, Dict, List, Optional, Tuple
 
 import ollama
 
@@ -13,9 +13,10 @@ def run_rag(
     provider: str,
     model: str,
     max_docs: int,
+    filters: Optional[Dict[str, Any]] = None,
 ) -> Tuple[str, List[Dict[str, Any]]]:
     try:
-        docs = search(prompt, k=max_docs)
+        docs = search(prompt, k=max_docs, filters=filters)
     except Exception as exc:
         return f"Retrieval error: {exc}", []
 
