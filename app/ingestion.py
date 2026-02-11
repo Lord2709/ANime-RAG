@@ -117,6 +117,7 @@ def build_documents(df: pd.DataFrame) -> List[Dict]:
         "Producers": "",
         "Rank": "",
         "Score": 0.0,
+        "Image URL": "",
     })
     
     documents: List[Dict] = []
@@ -136,6 +137,8 @@ def build_documents(df: pd.DataFrame) -> List[Dict]:
         synopsis = row["Synopsis"]
         chunks = chunk_text(synopsis, CHUNK_SIZE_CHARS, CHUNK_OVERLAP_CHARS)
 
+        image_url = row.get("Image URL", "")
+
         base_metadata = {
             "title": title,
             "score": float(row["Score"]) if not pd.isna(row["Score"]) else None,
@@ -147,6 +150,7 @@ def build_documents(df: pd.DataFrame) -> List[Dict]:
             "producer": row["Producers"],
             "studio": row["Studios"],
             "rank": row["Rank"],
+            "image_url": image_url,
         }
 
         for idx, chunk in enumerate(chunks):
