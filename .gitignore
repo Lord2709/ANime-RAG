@@ -1,1 +1,8 @@
 venv/
+anime/
+.venv/
+__pycache__/
+*.pyc
+.DS_Store
+data/processed/
+embeddings/faiss_index/
