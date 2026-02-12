@@ -64,10 +64,18 @@ def load_and_clean_csv(path: Path) -> pd.DataFrame:
         if col in df.columns:
             df.drop(columns=[col], inplace=True)
             
-    df = df.replace(
-        to_replace=["UNKNOWN", "unknown", "Unknown"],
-        value=0
-    )
+    # Replace unknown markers: numeric columns -> 0, text columns -> empty string
+    unknown_markers = ["UNKNOWN", "unknown", "Unknown"]
+    numeric_cols = ["Score", "Episodes", "Rank", "Scored By"]
+    text_cols = ["Name", "English name", "Genres", "Synopsis", "Studios", "Producers", "Type", "Duration", "Aired"]
+
+    for col in numeric_cols:
+        if col in df.columns:
+            df[col] = df[col].replace(unknown_markers, 0)
+
+    for col in text_cols:
+        if col in df.columns:
+            df[col] = df[col].replace(unknown_markers, "")
     
     # Ensure numeric types where needed (will raise if non‑numeric garbage)
     for col in ["Score", "Episodes", "Rank", "Scored By"]:
