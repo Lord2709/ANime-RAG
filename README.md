@@ -18,6 +18,9 @@ Local RAG app for anime recommendations and factual lookup using a CSV dataset, 
 - `data/processed/documents.json` generated documents
 - `embeddings/faiss_index/` FAISS index + embeddings
 
+## Pipeline Flowchart
+![Anime RAG pipeline](docs/anime-rag-pipeline.svg)
+
 ## Setup
 Create a virtual environment and install dependencies:
 
