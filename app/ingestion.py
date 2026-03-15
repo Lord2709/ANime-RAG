@@ -184,12 +184,21 @@ def save_documents(documents: List[Dict], path: Path) -> None:
     
 # Now begins embeddings and Faiss index part
 
+def load_embedding_model(model_name: str) -> SentenceTransformer:
+    try:
+        return SentenceTransformer(model_name)
+    except Exception as exc:
+        try:
+            return SentenceTransformer(model_name, local_files_only=True)
+        except Exception:
+            raise exc
+
 def build_embeddings(
     documents: List[Dict],
     model_name: str = EMBED_MODEL_NAME,
 ) -> np.ndarray:
     print(f"Loading embedding model: {model_name}")
-    model = SentenceTransformer(model_name)
+    model = load_embedding_model(model_name)
     texts = [d["content"] for d in documents]
     print(f"Encoding {len(texts)} documents... ")
     

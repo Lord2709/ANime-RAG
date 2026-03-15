@@ -1,7 +1,14 @@
 import html
+from pathlib import Path
+
 import streamlit as st
+from dotenv import load_dotenv
+
+BASE_DIR = Path(__file__).resolve().parents[1]
+load_dotenv(BASE_DIR / ".env.local")
 
 from generation import PromptConfig
+from providers import default_model_for, provider_suggestions
 from routing import run_rag
 
 
@@ -212,17 +219,13 @@ st.markdown(
 # --- Sidebar controls ---
 st.sidebar.header("Settings")
 
-provider = st.sidebar.selectbox("LLM Provider", ["ollama"])
-
-OLLAMA_MODELS = [
-    "llama3.1:8b",
-    "mistral:7b-instruct-v0.3-q4_0",
-    "qwen:7b",
-    "deepseek-llm:7b-chat",
-    "phi3:mini",
-]
-
-ollama_model = st.sidebar.selectbox("Ollama Model", OLLAMA_MODELS, index=0)
+provider = "ollama"
+ollama_models = provider_suggestions()["ollama"]
+default_ollama_model = default_model_for(provider)
+if default_ollama_model not in ollama_models:
+    ollama_models = [default_ollama_model, *ollama_models]
+default_model_index = ollama_models.index(default_ollama_model)
+selected_model = st.sidebar.selectbox("Ollama Model", ollama_models, index=default_model_index)
 
 style = st.sidebar.selectbox("Answer Style", ["concise", "detailed"])
 show_images = st.sidebar.checkbox("Show Result Images", value=True)
@@ -241,9 +244,9 @@ config = PromptConfig(
 
 st.markdown(
     f"""
-<div class="status-row">
+  <div class="status-row">
   <div class="status-chip">Provider: {html.escape(provider)}</div>
-  <div class="status-chip">Model: {html.escape(ollama_model)}</div>
+  <div class="status-chip">Model: {html.escape(selected_model)}</div>
   <div class="status-chip">Max Docs: {max_docs}</div>
   <div class="status-chip">Style: {html.escape(style)}</div>
 </div>
@@ -280,7 +283,7 @@ if prompt:
                 history=st.session_state.messages,
                 config=config,
                 provider=provider,
-                model=ollama_model,
+                model=selected_model,
                 max_docs=max_docs,
             )
 

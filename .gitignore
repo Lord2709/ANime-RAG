@@ -4,5 +4,11 @@ anime/
 __pycache__/
 *.pyc
 .DS_Store
+.env.local
+.env.web
+.env.local.*
+.env.web.*
+!.env.local.example
+!.env.web.example
 data/processed/
 embeddings/faiss_index/

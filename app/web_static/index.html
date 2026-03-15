@@ -1,0 +1,97 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Anime RAG</title>
+    <link rel="stylesheet" href="/static/styles.css" />
+    <script src="/static/app.js" defer></script>
+  </head>
+  <body>
+    <div class="page-shell">
+      <aside class="control-panel">
+        <div class="brand-lockup">
+          <div class="brand-kicker">Cinematic Anime Search</div>
+          <div class="brand-title">Anime RAG</div>
+          <p class="brand-copy">
+            Discover recommendations, hidden gems, and story details from your archive.
+          </p>
+        </div>
+
+        <div class="panel-section">
+          <label class="field-label" for="styleSelect">Answer style</label>
+          <select id="styleSelect">
+            <option value="concise">Concise</option>
+            <option value="detailed">Detailed</option>
+          </select>
+        </div>
+
+        <label class="toggle-row" for="showImagesToggle">
+          <input id="showImagesToggle" type="checkbox" checked />
+          <span>Show anime posters in results</span>
+        </label>
+
+        <div class="panel-section">
+          <div class="field-label">Prompt starters</div>
+          <div class="prompt-chip-row">
+            <button class="prompt-chip" type="button" data-prompt="Recommend emotional fantasy anime with found family.">
+              Emotional fantasy
+            </button>
+            <button class="prompt-chip" type="button" data-prompt="Suggest short thriller anime with mystery and strong pacing.">
+              Short thriller
+            </button>
+            <button class="prompt-chip" type="button" data-prompt="What are some top sci-fi mecha classics and why do they matter?">
+              Mecha classics
+            </button>
+          </div>
+        </div>
+
+        <div class="note-card">
+          Start with a mood, genre, studio, or title and explore from there.
+        </div>
+      </aside>
+
+      <main class="app-panel">
+        <section class="hero-card">
+          <div class="hero-eyebrow">Anime Discovery Engine</div>
+          <h1>Explore your anime archive through a cinematic chat experience.</h1>
+          <p>
+            Ask for recommendations, plot details, genre mashups, or studio-specific picks
+            with grounded search across your collection.
+          </p>
+          <div class="status-row" id="statusRow"></div>
+        </section>
+
+        <section class="chat-panel">
+          <div id="messages" class="messages"></div>
+          <div id="typingIndicator" class="typing-indicator hidden">Thinking through the archive...</div>
+
+          <section id="matchesPanel" class="matches-panel hidden">
+            <div class="matches-header">
+              <div>
+                <div class="matches-kicker">Retrieved context</div>
+                <h2>Top Matches</h2>
+              </div>
+              <div id="matchCount" class="matches-count"></div>
+            </div>
+            <div id="cards" class="card-grid"></div>
+          </section>
+
+          <form id="composer" class="composer">
+            <label class="sr-only" for="promptInput">Ask something</label>
+            <textarea
+              id="promptInput"
+              rows="3"
+              maxlength="4000"
+              placeholder="Ask about anime recommendations, studios, genres, or a specific title..."
+            ></textarea>
+            <div class="composer-footer">
+              <div class="composer-hint">Press Enter to send. Use Shift+Enter for a new line.</div>
+              <button id="sendButton" type="submit">Send</button>
+            </div>
+          </form>
+        </section>
+      </main>
+    </div>
+  </body>
+</html>

@@ -24,6 +24,16 @@ _docs = None
 _bm25_state = None
 
 
+def _load_sentence_transformer(model_name: str) -> SentenceTransformer:
+    try:
+        return SentenceTransformer(model_name)
+    except Exception as exc:
+        try:
+            return SentenceTransformer(model_name, local_files_only=True)
+        except Exception:
+            raise exc
+
+
 def _normalize_text(value: Any) -> str:
     if value is None:
         return ""
@@ -203,7 +213,7 @@ def _matches_filters(doc: Dict[str, Any], filters: Optional[Dict[str, Any]]) -> 
 def _load_model():
     global _model
     if _model is None:
-        _model = SentenceTransformer(EMBED_MODEL_NAME)
+        _model = _load_sentence_transformer(EMBED_MODEL_NAME)
     return _model
 
 

@@ -1,8 +1,7 @@
 from typing import Any, Dict, List, Optional, Tuple
 
-import ollama
-
 from generation import build_messages, PromptConfig
+from providers import generate_chat_response
 from retrieval import search
 
 
@@ -29,20 +28,24 @@ def run_rag(
             [],
         )
 
+    history_for_prompt = list(history or [])
+    if history_for_prompt:
+        last_message = history_for_prompt[-1]
+        last_role = str(last_message.get("role", "")).strip().lower()
+        last_content = str(last_message.get("content", "")).strip()
+        if last_role == "user" and last_content == str(prompt).strip():
+            history_for_prompt = history_for_prompt[:-1]
+
     messages = build_messages(
         question=prompt,
         docs=docs,
-        history=history,
+        history=history_for_prompt,
         config=config,
     )
 
-    if provider == "ollama":
-        try:
-            result = ollama.chat(model=model, messages=messages)
-            response = result["message"]["content"]
-        except Exception as exc:
-            response = f"Model error: {exc}"
-    else:
-        response = "Stub response (LLM disabled)."
+    try:
+        response = generate_chat_response(provider=provider, model=model, messages=messages)
+    except Exception as exc:
+        response = f"Model error: {exc}"
 
     return response, docs
